@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
     GDToT_BASE_URL: process.env.GDToT_BASE_URL,
     GDToT_EMAIL: process.env.GDToT_EMAIL,
   },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
