@@ -22,13 +22,6 @@ interface FileProcessStatus {
   gdFlixUrl?: string;
 }
 
-interface GDFlixFile {
-  id: number;
-  name: string;
-  size: number;
-  status: number;
-}
-
 export default function Home() {
   const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -49,6 +42,7 @@ export default function Home() {
     }
   }, [inputRef]);
 
+  const [driveData, setDriveData] = useState<any[]>([]);
   const [fileProcessStatuses, setFileProcessStatuses] = useState<
     FileProcessStatus[]
   >([]);
@@ -57,7 +51,7 @@ export default function Home() {
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
   const [isExtracted, setIsExtracted] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [inputValue, setInputValue] = useState<string>("");
 
@@ -163,9 +157,10 @@ export default function Home() {
           setIsExtracted(true);
 
           const files = isFolder ? folderData.files : [folderData.mimeData];
+          setDriveData(files);
 
           const initialStatuses: FileProcessStatus[] = files.map(
-            (file: GDFlixFile) => ({
+            (file: any) => ({
               id: file.id,
               name: file.name,
               size: file.size,
@@ -186,12 +181,12 @@ export default function Home() {
                 `api/gdflix/upload?mimeId=${file.id}`
               ).then((res) => res.json());
 
-              setFileProcessStatuses((prev: FileProcessStatus[]) => {
-                const updatedStatuses = prev.map((f) =>
+              setFileProcessStatuses((prev: any) => {
+                const updatedStatuses = prev.map((f: any) =>
                   f.id === file.id
                     ? {
                         ...f,
-                        status: "completed" as "completed",
+                        status: "completed",
                         gdFlixUrl:
                           `${GDFlix_BASE_URL}/file/${gdFlixFile?.key}` ||
                           "No URL generated",
@@ -207,9 +202,9 @@ export default function Home() {
                 return updatedStatuses;
               });
             } catch (fileError) {
-              setFileProcessStatuses((prev) => {
-                const updatedStatuses = prev.map((f) =>
-                  f.id === file.id ? { ...f, status: "error" as "error" } : f
+              setFileProcessStatuses((prev: any) => {
+                const updatedStatuses = prev.map((f: any) =>
+                  f.id === file.id ? { ...f, status: "error" } : f
                 );
 
                 if (checkAllFilesProcessed(updatedStatuses)) {
@@ -260,7 +255,7 @@ export default function Home() {
           <motion.input
             ref={inputRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e: any) => setInputValue(e.target.value)}
             initial={{ width: "24rem" }}
             animate={{
               width: isInputFocused ? "28rem" : "24rem",
