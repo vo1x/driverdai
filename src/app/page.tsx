@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
+
+import { Toaster, toast } from "sonner";
 import {
   Loader,
   CheckCircle2,
@@ -61,24 +63,40 @@ export default function Home() {
     );
   };
 
+  const getReadableFS = (bytes: number) => {
+    console.log(bytes);
+    if (bytes === 0) return "0 Bytes";
+    if (!bytes) {
+      return null;
+    }
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
   const generateFormattedText = (statuses: FileProcessStatus[]) => {
     return statuses
       .filter((file) => file.status === "completed")
-      .map((file) => `**${file.name} [${file.size}]\n${file.gdFlixUrl}**`)
+      .map(
+        (file) =>
+          `**${file.name} [${getReadableFS(file.size)}]\n${file.gdFlixUrl}**`
+      )
       .join("\n\n");
   };
 
-  // Copy to clipboard function
-  // const copyToClipboard = () => {
-  //   navigator.clipboard.writeText(generatedText)
-  //     .then(() => {
-  //       toast.success('Copied to clipboard');
-  //     })
-  //     .catch(err => {
-  //       toast.error('Failed to copy');
-  //       console.error('Copy failed', err);
-  //     });
-  // };
+  const copyToClipboard = () => {
+    navigator.clipboard
+      .writeText(generatedText)
+      .then(() => {
+        toast.success("Copied to clipboard");
+      })
+      .catch((err) => {
+        toast.error("Failed to copy");
+        console.error("Copy failed", err);
+      });
+  };
+
   const extractGDriveId = (driveUrl: string): string | Error => {
     const driveIdRegex =
       /^(tp:|sa:|mtp:)?(?:[a-zA-Z0-9-_]{33}|[a-zA-Z0-9_-]{19})$|^gdl$|^(tp:|mtp:)?root$/;
@@ -117,10 +135,12 @@ export default function Home() {
       return error as Error;
     }
   };
+  const [logsVisible, setLogsVisible] = useState<boolean>(true);
 
   const handleGenButton = async () => {
     const driveUrl = inputValue;
     if (!driveUrl || driveUrl === "") {
+      toast.error("Please enter a google drive URL");
       return;
     }
 
@@ -128,6 +148,7 @@ export default function Home() {
 
     if (mimeId instanceof Error) {
       console.error(mimeId.message);
+      toast.error(mimeId.message);
       return;
     }
 
@@ -135,6 +156,7 @@ export default function Home() {
 
     try {
       setIsGenerating(true);
+      setLogsVisible(true);
       setIsError(false);
       setIsExtracted(false);
       setFileProcessStatuses([]);
@@ -235,7 +257,7 @@ export default function Home() {
   const getStatusIcon = (status: FileProcessStatus["status"]) => {
     switch (status) {
       case "pending":
-        return <Circle className="text-slate-400" />;
+        return <Circle className="text-slate-400" size={24} />;
       case "processing":
         return <Loader className="animate-spin text-blue-500" />;
       case "completed":
@@ -247,88 +269,129 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (generatedText !== "") setLogsVisible(false);
+  }, [generatedText]);
+
   return (
-    <div className="h-screen flex items-center justify-center w-screen p-4">
-      <div className="flex flex-col items-center gap-8 w-full max-w-2xl ">
-        <span className="text-5xl font-bold text-slate-300">Driver Dai</span>
-        <div className="flex items-center justify-center gap-2 w-max border border-slate-700 bg-[#161B2E] p-2 px-3 rounded-full">
-          <motion.input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e: any) => setInputValue(e.target.value)}
-            initial={{ width: "24rem" }}
-            animate={{
-              width: isInputFocused ? "28rem" : "24rem",
-              transition: { duration: 0.3 },
-            }}
-            type="text"
-            className=" bg-[#0F131F] outline-none rounded-full text-lg p-2 px-4 w-full"
-            placeholder="URL"
-          />
-          <button
-            onClick={handleGenButton}
-            className="p-2 bg-[#445173] text-slate-400 hover:text-slate-100 transition-all duration-200 rounded-full font-semibold"
-          >
-            <Upload></Upload>
-          </button>
-        </div>
-        {isGenerating && (
-          <div className="bg-[#0C101C] flex flex-col border p-4 px-0 rounded-xl border-slate-800 h-max w-full">
-            <div className="flex items-center text-slate-300 px-4">
-              <ChevronRight></ChevronRight>
-              <span className="font-semibold">Extraction Logs</span>
-            </div>
-            <div className="w-full border-t my-2 border-slate-800 mb-4"></div>
+    <>
+      <div className=" flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-8 w-full max-w-2xl ">
+          <span className="text-5xl font-bold text-slate-300">Driver Dai</span>
+          <div className="flex items-center justify-center gap-2 w-max border border-slate-700 bg-[#161B2E] p-2 px-3 rounded-full">
+            <motion.input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e: any) => setInputValue(e.target.value)}
+              initial={{ width: "24rem" }}
+              animate={{
+                width: isInputFocused ? "28rem" : "24rem",
+                transition: { duration: 0.3 },
+              }}
+              type="text"
+              className=" bg-[#0F131F] outline-none rounded-full text-lg p-2 px-4 w-full"
+              placeholder="URL"
+            />
+            <button
+              onClick={handleGenButton}
+              className="p-2 bg-[#445173] text-slate-400 hover:text-slate-100 transition-all duration-200 rounded-full font-semibold"
+            >
+              <Upload></Upload>
+            </button>
+          </div>
 
-            <div className="flex items-center gap-2 mb-2 px-4">
-              {isExtracting ? (
-                <Loader className="animate-spin" />
-              ) : isExtracted && !isError ? (
-                <CheckCircle2
-                  stroke="#02B063"
-                  fill="#02B063"
-                  fillOpacity={"25%"}
-                />
-              ) : (
-                <XCircle stroke="#ef4444" fill="#ef4444" fillOpacity={"25%"} />
-              )}
-              <span className="text-slate-400">
-                Fetching folder contents from Google Drive
-              </span>
-            </div>
+          <div className="flex flex-col gap-4 max-w-2xl min-w-full">
+            {isGenerating && (
+              <motion.div
+                // Initial state when the component first renders
+                initial={{ height: "max-content" }}
+                // Animation for expansion or collapse based on `logsVisible`
+                animate={{ height: logsVisible ? "max-content" : "3.5rem" }} // Smoothly expand/collapse
+                exit={{ height: "0" }} // When the component is removed, collapse it to height 0
+                className={`bg-[#0C101C] flex flex-col overflow-hidden border p-4 px-0 rounded-xl border-slate-800`}
+              >
+                {/* Clickable header for toggling visibility */}
+                <div
+                  className={`flex items-center text-slate-300 px-4 pl-2 cursor-pointer  ${
+                    !logsVisible ? "pb-4" : ""
+                  }`}
+                  onClick={() => setLogsVisible((prev) => !prev)} // Toggle visibility
+                >
+                  {/* Chevron icon to indicate expandable section */}
+                  <ChevronRight></ChevronRight>
+                  <span className="font-semibold">Extraction Logs</span>
+                </div>
 
-            {fileProcessStatuses.length > 0 && (
-              <div className="space-y-2 px-4">
-                {fileProcessStatuses.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center gap-2 text-md"
-                  >
-                    {getStatusIcon(file.status)}
-                    <span className="truncate text-slate-400">{file.name}</span>
+                {/* Border separating the header and content */}
+                <div
+                  className={`w-full border-t my-2 border-slate-800 mb-4  ${
+                    !logsVisible ? "hidden" : "" // Hide the border if not visible
+                  }`}
+                ></div>
+
+                {/* Status text with dynamic icons */}
+                <div className="flex items-center gap-2 mb-2 px-4">
+                  {isExtracting ? (
+                    <Loader className="animate-spin" />
+                  ) : isExtracted && !isError ? (
+                    <CheckCircle2
+                      stroke="#02B063"
+                      fill="#02B063"
+                      fillOpacity={"25%"}
+                    />
+                  ) : (
+                    <XCircle
+                      stroke="#ef4444"
+                      fill="#ef4444"
+                      fillOpacity={"25%"}
+                    />
+                  )}
+                  <span className="text-slate-400">
+                    Fetching folder contents from Google Drive
+                  </span>
+                </div>
+
+                {/* Displaying file process statuses if available */}
+                {fileProcessStatuses.length > 0 && (
+                  <div className="flex flex-col px-4 gap-2">
+                    {fileProcessStatuses.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center gap-2 text-md w-full"
+                      >
+                        {/* Display status icons and filenames */}
+                        <span>{getStatusIcon(file.status)}</span>
+                        <span className="truncate text-slate-400">
+                          {file.name}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+              </motion.div>
+            )}
+
+            {/* Display generated links if available */}
+            {generatedText && (
+              <div className="flex flex-col bg-[#0C101C] border  border-slate-800 p-4 pt-0 px-0 rounded-xl relative max-h-96 w-full overflow-y-auto">
+                <div className="flex items-center justify-between text-slate-300 px-4 py-2 sticky top-0 z-10 bg-[#0C101C] border-b mb-4 border-slate-800">
+                  <span className="font-semibold">Generated Links</span>
+                  <button
+                    onClick={copyToClipboard}
+                    className="flex gap-2 items-center p-2 rounded-xl hover:bg-[#1F232E]"
+                  >
+                    <Copy size={20}></Copy>
+                    <span>Copy</span>
+                  </button>
+                </div>
+                <pre className=" text-slate-400 whitespace-pre-wrap break-words px-4">
+                  {generatedText}
+                </pre>
               </div>
             )}
           </div>
-        )}
-
-        {generatedText && (
-          <div className="flex flex-col bg-[#0C101C] border  border-slate-800 p-4 px-0 rounded-xl relative">
-            <div className="flex items-center justify-between text-slate-300 px-4">
-              <span className="font-semibold">Generated Links</span>
-              <button className="flex gap-2 items-center p-2 rounded-xl hover:bg-[#1F232E]">
-                <Copy size={20}></Copy>
-                <span>Copy</span>
-              </button>
-            </div>
-            <div className="w-full border-t my-2 border-slate-800"></div>
-            <pre className=" text-slate-400 whitespace-pre-wrap break-words px-4">
-              {generatedText}
-            </pre>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
