@@ -149,9 +149,7 @@ export default function Home() {
           setIsExtracting(false);
           setIsExtracted(true);
 
-          const files = isFolder
-            ? folderData.files
-            : [folderData.mimeData];
+          const files = isFolder ? folderData.files : [folderData.mimeData];
           setDriveData(files);
 
           const initialStatuses: FileProcessStatus[] = files.map(
@@ -245,7 +243,7 @@ export default function Home() {
   return (
     <div className="h-screen flex items-center justify-center w-screen p-4">
       <div className="flex flex-col items-center gap-8 w-full max-w-2xl ">
-        <span className="text-5xl">Driver Dai</span>
+        <span className="text-5xl font-bold text-slate-300">Driver Dai</span>
         <div className="flex items-center justify-center gap-2 w-max border border-slate-700 bg-[#161B2E] p-2 px-3 rounded-full">
           <motion.input
             ref={inputRef}
