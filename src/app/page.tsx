@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import {
   Loader,
   CheckCircle2,
@@ -80,7 +80,7 @@ export default function Home() {
       .filter((file) => file.status === "completed")
       .map(
         (file) =>
-          `**${file.name} [${getReadableFS(file.size)}]\n${file.gdFlixUrl}**`
+          `${file.name} [${getReadableFS(file.size)}]\n${file.gdFlixUrl}`
       )
       .join("\n\n");
   };
@@ -303,33 +303,27 @@ export default function Home() {
           <div className="flex flex-col gap-4 max-w-2xl min-w-full">
             {isGenerating && (
               <motion.div
-                // Initial state when the component first renders
                 initial={{ height: "max-content" }}
-                // Animation for expansion or collapse based on `logsVisible`
-                animate={{ height: logsVisible ? "max-content" : "3.5rem" }} // Smoothly expand/collapse
-                exit={{ height: "0" }} // When the component is removed, collapse it to height 0
+                animate={{ height: logsVisible ? "max-content" : "3.5rem" }}
+                exit={{ height: "0" }} 
                 className={`bg-[#0C101C] flex flex-col overflow-hidden border p-4 px-0 rounded-xl border-slate-800`}
               >
-                {/* Clickable header for toggling visibility */}
                 <div
                   className={`flex items-center text-slate-300 px-4 pl-2 cursor-pointer  ${
                     !logsVisible ? "pb-4" : ""
                   }`}
                   onClick={() => setLogsVisible((prev) => !prev)} // Toggle visibility
                 >
-                  {/* Chevron icon to indicate expandable section */}
                   <ChevronRight></ChevronRight>
                   <span className="font-semibold">Extraction Logs</span>
                 </div>
 
-                {/* Border separating the header and content */}
                 <div
                   className={`w-full border-t my-2 border-slate-800 mb-4  ${
                     !logsVisible ? "hidden" : "" // Hide the border if not visible
                   }`}
                 ></div>
 
-                {/* Status text with dynamic icons */}
                 <div className="flex items-center gap-2 mb-2 px-4">
                   {isExtracting ? (
                     <Loader className="animate-spin" />
@@ -351,7 +345,6 @@ export default function Home() {
                   </span>
                 </div>
 
-                {/* Displaying file process statuses if available */}
                 {fileProcessStatuses.length > 0 && (
                   <div className="flex flex-col px-4 gap-2">
                     {fileProcessStatuses.map((file) => (
@@ -359,7 +352,6 @@ export default function Home() {
                         key={file.id}
                         className="flex items-center gap-2 text-md w-full"
                       >
-                        {/* Display status icons and filenames */}
                         <span>{getStatusIcon(file.status)}</span>
                         <span className="truncate text-slate-400">
                           {file.name}
@@ -371,7 +363,6 @@ export default function Home() {
               </motion.div>
             )}
 
-            {/* Display generated links if available */}
             {generatedText && (
               <div className="flex flex-col bg-[#0C101C] border  border-slate-800 p-4 pt-0 px-0 rounded-xl relative max-h-96 w-full overflow-y-auto">
                 <div className="flex items-center justify-between text-slate-300 px-4 py-2 sticky top-0 z-10 bg-[#0C101C] border-b mb-4 border-slate-800">
