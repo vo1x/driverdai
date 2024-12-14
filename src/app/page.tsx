@@ -2,8 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Check, Loader } from "lucide-react";
-import { CheckCircle2, XCircle, Circle, Copy, Upload } from "lucide-react";
+import {
+  Loader,
+  CheckCircle2,
+  XCircle,
+  Circle,
+  Copy,
+  Upload,
+  ChevronRight,
+} from "lucide-react";
 
 const GDFlix_BASE_URL = `https://new6.gdflix.cfd`;
 
@@ -13,6 +20,13 @@ interface FileProcessStatus {
   size: number;
   status: "pending" | "processing" | "completed" | "error";
   gdFlixUrl?: string;
+}
+
+interface GDFlixFile {
+  id: number;
+  name: string;
+  size: number;
+  status: number;
 }
 
 export default function Home() {
@@ -35,7 +49,6 @@ export default function Home() {
     }
   }, [inputRef]);
 
-  const [driveData, setDriveData] = useState<any[]>([]);
   const [fileProcessStatuses, setFileProcessStatuses] = useState<
     FileProcessStatus[]
   >([]);
@@ -44,7 +57,7 @@ export default function Home() {
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
   const [isExtracted, setIsExtracted] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const [inputValue, setInputValue] = useState<string>("");
 
@@ -150,10 +163,9 @@ export default function Home() {
           setIsExtracted(true);
 
           const files = isFolder ? folderData.files : [folderData.mimeData];
-          setDriveData(files);
 
           const initialStatuses: FileProcessStatus[] = files.map(
-            (file: any) => ({
+            (file: GDFlixFile) => ({
               id: file.id,
               name: file.name,
               size: file.size,
@@ -174,8 +186,8 @@ export default function Home() {
                 `api/gdflix/upload?mimeId=${file.id}`
               ).then((res) => res.json());
 
-              setFileProcessStatuses((prev: any) => {
-                const updatedStatuses = prev.map((f: any) =>
+              setFileProcessStatuses((prev: FileProcessStatus[]) => {
+                const updatedStatuses = prev.map((f) =>
                   f.id === file.id
                     ? {
                         ...f,
@@ -195,8 +207,8 @@ export default function Home() {
                 return updatedStatuses;
               });
             } catch (fileError) {
-              setFileProcessStatuses((prev: any) => {
-                const updatedStatuses = prev.map((f: any) =>
+              setFileProcessStatuses((prev) => {
+                const updatedStatuses = prev.map((f) =>
                   f.id === file.id ? { ...f, status: "error" } : f
                 );
 
@@ -248,7 +260,7 @@ export default function Home() {
           <motion.input
             ref={inputRef}
             value={inputValue}
-            onChange={(e: any) => setInputValue(e.target.value)}
+            onChange={(e) => setInputValue(e.target.value)}
             initial={{ width: "24rem" }}
             animate={{
               width: isInputFocused ? "28rem" : "24rem",
@@ -266,8 +278,14 @@ export default function Home() {
           </button>
         </div>
         {isGenerating && (
-          <div className="bg-[#0C101C] border p-4 rounded-xl border-slate-800 h-max w-full">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="bg-[#0C101C] flex flex-col border p-4 px-0 rounded-xl border-slate-800 h-max w-full">
+            <div className="flex items-center text-slate-300 px-4">
+              <ChevronRight></ChevronRight>
+              <span className="font-semibold">Extraction Logs</span>
+            </div>
+            <div className="w-full border-t my-2 border-slate-800 mb-4"></div>
+
+            <div className="flex items-center gap-2 mb-2 px-4">
               {isExtracting ? (
                 <Loader className="animate-spin" />
               ) : isExtracted && !isError ? (
@@ -285,7 +303,7 @@ export default function Home() {
             </div>
 
             {fileProcessStatuses.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 px-4">
                 {fileProcessStatuses.map((file) => (
                   <div
                     key={file.id}
@@ -297,14 +315,22 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </div>
+        )}
 
-            {generatedText && (
-              <div className="flex flex-col mt-4 bg-slate-900 p-4 rounded-md relative">
-                <pre className="text-sm text-slate-300 whitespace-pre-wrap break-words ">
-                  {generatedText}
-                </pre>
-              </div>
-            )}
+        {generatedText && (
+          <div className="flex flex-col bg-[#0C101C] border  border-slate-800 p-4 px-0 rounded-xl relative">
+            <div className="flex items-center justify-between text-slate-300 px-4">
+              <span className="font-semibold">Generated Links</span>
+              <button className="flex gap-2 items-center p-2 rounded-xl hover:bg-[#1F232E]">
+                <Copy size={20}></Copy>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div className="w-full border-t my-2 border-slate-800"></div>
+            <pre className=" text-slate-400 whitespace-pre-wrap break-words px-4">
+              {generatedText}
+            </pre>
           </div>
         )}
       </div>
