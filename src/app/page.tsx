@@ -35,7 +35,7 @@ export default function Home() {
     }
   }, [inputRef]);
 
-  const [folderData, setFolderData] = useState<any[]>([]);
+  const [driveData, setDriveData] = useState<any[]>([]);
   const [fileProcessStatuses, setFileProcessStatuses] = useState<
     FileProcessStatus[]
   >([]);
@@ -72,85 +72,153 @@ export default function Home() {
   //       console.error('Copy failed', err);
   //     });
   // };
+  const extractGDriveId = (driveUrl: string): string | Error => {
+    const driveIdRegex =
+      /^(tp:|sa:|mtp:)?(?:[a-zA-Z0-9-_]{33}|[a-zA-Z0-9_-]{19})$|^gdl$|^(tp:|mtp:)?root$/;
+    const mimeIdRegex =
+      /https:\/\/drive\.google\.com\/(?:drive(.*?)\/folders\/|file(.*?)?\/d\/)([-\w]+)/;
 
-  const handleGenerateButton = async (folderId: string) => {
-    setIsGenerating(true);
-    setIsError(false);
-    setIsExtracted(false);
-    setFileProcessStatuses([]);
-    setGeneratedText("");
+    const isGDriveId = (id: string): boolean => driveIdRegex.test(id);
+
+    const isGDriveLink = (url: string): boolean =>
+      url.includes("drive.google.com") ||
+      url.includes("drive.usercontent.google.com");
 
     try {
-      setIsExtracting(true);
-      const folderData = await fetch(
-        `api/gdrive/extractFolder?mimeId=${folderId}`
-      ).then((res) => res.json());
+      if (isGDriveId(driveUrl)) {
+        return driveUrl;
+      }
 
-      if (folderData && folderData.files) {
-        setIsExtracting(false);
-        setIsExtracted(true);
-        setFolderData(folderData.files);
+      if (isGDriveLink(driveUrl)) {
+        const match = driveUrl.match(mimeIdRegex);
 
-        const initialStatuses: FileProcessStatus[] = folderData.files.map(
-          (file: any) => ({
-            id: file.id,
-            name: file.name,
-            size: file.size,
-            status: "pending",
-          })
-        );
-        setFileProcessStatuses(initialStatuses);
-
-        for (const file of folderData.files) {
-          setFileProcessStatuses((prev) =>
-            prev.map((f) =>
-              f.id === file.id ? { ...f, status: "processing" } : f
-            )
-          );
-
-          try {
-            const gdFlixFile = await fetch(
-              `api/gdflix/upload?mimeId=${file.id}`
-            ).then((res) => res.json());
-
-            setFileProcessStatuses((prev: any) => {
-              const updatedStatuses = prev.map((f: any) =>
-                f.id === file.id
-                  ? {
-                      ...f,
-                      status: "completed",
-                      gdFlixUrl:
-                        `${GDFlix_BASE_URL}/file/${gdFlixFile?.key}` ||
-                        "No URL generated",
-                    }
-                  : f
-              );
-
-              if (checkAllFilesProcessed(updatedStatuses)) {
-                const formattedText = generateFormattedText(updatedStatuses);
-                setGeneratedText(formattedText);
-              }
-
-              return updatedStatuses;
-            });
-          } catch (fileError) {
-            setFileProcessStatuses((prev: any) => {
-              const updatedStatuses = prev.map((f: any) =>
-                f.id === file.id ? { ...f, status: "error" } : f
-              );
-
-              if (checkAllFilesProcessed(updatedStatuses)) {
-                const formattedText = generateFormattedText(updatedStatuses);
-                setGeneratedText(formattedText);
-              }
-
-              return updatedStatuses;
-            });
-            console.error(`Error processing file ${file.name}:`, fileError);
-          }
+        if (match) {
+          return match[3];
         }
-      } else {
-        throw new Error("Unable to extract folder");
+
+        const url = new URL(driveUrl);
+        const params = new URLSearchParams(url.search);
+        const id = params.get("id");
+
+        if (id) {
+          return id;
+        }
+      }
+
+      throw new Error("Invalid Google Drive ID or link");
+    } catch (error) {
+      return error as Error;
+    }
+  };
+
+  const handleGenButton = async () => {
+    const driveUrl = inputValue;
+    if (!driveUrl || driveUrl === "") {
+      return;
+    }
+
+    const mimeId = extractGDriveId(driveUrl);
+
+    if (mimeId instanceof Error) {
+      console.error(mimeId.message);
+      return;
+    }
+
+    const isFolder = driveUrl.includes("/folders/");
+
+    try {
+      setIsGenerating(true);
+      setIsError(false);
+      setIsExtracted(false);
+      setFileProcessStatuses([]);
+      setGeneratedText("");
+
+      try {
+        setIsExtracting(true);
+        const extractionEndpoint = isFolder
+          ? `api/gdrive/extractFolder?mimeId=${mimeId}`
+          : `api/gdrive/extractFile?mimeId=${mimeId}`;
+
+        const folderData = await fetch(extractionEndpoint).then((res) =>
+          res.json()
+        );
+
+        console.log(folderData);
+
+        if (folderData && (folderData?.files || folderData.mimeData)) {
+          setIsExtracting(false);
+          setIsExtracted(true);
+
+          const files = isFolder
+            ? folderData.files
+            : [folderData.mimeData];
+          setDriveData(files);
+
+          const initialStatuses: FileProcessStatus[] = files.map(
+            (file: any) => ({
+              id: file.id,
+              name: file.name,
+              size: file.size,
+              status: "pending",
+            })
+          );
+          setFileProcessStatuses(initialStatuses);
+
+          for (const file of files) {
+            setFileProcessStatuses((prev) =>
+              prev.map((f) =>
+                f.id === file.id ? { ...f, status: "processing" } : f
+              )
+            );
+
+            try {
+              const gdFlixFile = await fetch(
+                `api/gdflix/upload?mimeId=${file.id}`
+              ).then((res) => res.json());
+
+              setFileProcessStatuses((prev: any) => {
+                const updatedStatuses = prev.map((f: any) =>
+                  f.id === file.id
+                    ? {
+                        ...f,
+                        status: "completed",
+                        gdFlixUrl:
+                          `${GDFlix_BASE_URL}/file/${gdFlixFile?.key}` ||
+                          "No URL generated",
+                      }
+                    : f
+                );
+
+                if (checkAllFilesProcessed(updatedStatuses)) {
+                  const formattedText = generateFormattedText(updatedStatuses);
+                  setGeneratedText(formattedText);
+                }
+
+                return updatedStatuses;
+              });
+            } catch (fileError) {
+              setFileProcessStatuses((prev: any) => {
+                const updatedStatuses = prev.map((f: any) =>
+                  f.id === file.id ? { ...f, status: "error" } : f
+                );
+
+                if (checkAllFilesProcessed(updatedStatuses)) {
+                  const formattedText = generateFormattedText(updatedStatuses);
+                  setGeneratedText(formattedText);
+                }
+
+                return updatedStatuses;
+              });
+              console.error(`Error processing file ${file.name}:`, fileError);
+            }
+          }
+        } else {
+          throw new Error("Unable to extract folder or file");
+        }
+      } catch (error) {
+        setIsExtracting(false);
+        setIsError(true);
+        console.error(error);
       }
     } catch (error) {
       setIsExtracting(false);
@@ -193,7 +261,7 @@ export default function Home() {
             placeholder="URL"
           />
           <button
-            onClick={() => handleGenerateButton(`1Qe-sdfsdf`)}
+            onClick={handleGenButton}
             className="p-2 bg-[#445173] text-slate-400 hover:text-slate-100 transition-all duration-200 rounded-full font-semibold"
           >
             <Upload></Upload>
@@ -201,7 +269,7 @@ export default function Home() {
         </div>
         {isGenerating && (
           <div className="bg-[#0C101C] border p-4 rounded-xl border-slate-800 h-max w-full">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-2">
               {isExtracting ? (
                 <Loader className="animate-spin" />
               ) : isExtracted && !isError ? (
