@@ -191,7 +191,7 @@ export default function Home() {
                   f.id === file.id
                     ? {
                         ...f,
-                        status: "completed",
+                        status: "completed" as "completed",
                         gdFlixUrl:
                           `${GDFlix_BASE_URL}/file/${gdFlixFile?.key}` ||
                           "No URL generated",
@@ -209,7 +209,7 @@ export default function Home() {
             } catch (fileError) {
               setFileProcessStatuses((prev) => {
                 const updatedStatuses = prev.map((f) =>
-                  f.id === file.id ? { ...f, status: "error" } : f
+                  f.id === file.id ? { ...f, status: "error" as "error" } : f
                 );
 
                 if (checkAllFilesProcessed(updatedStatuses)) {
