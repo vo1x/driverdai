@@ -18,8 +18,10 @@ const SortOptions: React.FC<SortOptionsProps> = ({
         defaultValue={defaultValue ?? "name"}
         className="bg-slate-800 p-2 rounded-md outline-none"
       >
-        <option value="size">Size</option>
-        <option value="name" selected>
+        <option value="size" selected={defaultValue === "size"}>
+          Size
+        </option>
+        <option value="name" selected={defaultValue === "name"}>
           Name
         </option>
       </select>

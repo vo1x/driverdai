@@ -81,7 +81,7 @@ export default function Home() {
 
   const generateFormattedText = (
     statuses: FileProcessStatus[],
-    sortBy?: string
+    sortBy: string = "name"
   ) => {
     return statuses
       .filter((file) => file.status === "completed")
