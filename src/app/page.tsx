@@ -24,6 +24,8 @@ interface FileProcessStatus {
   gdFlixUrl?: string;
 }
 
+import SortOptions from "@/components/sort-options";
+
 export default function Home() {
   const [isInputFocused, setIsInputFocused] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -75,9 +77,23 @@ export default function Home() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const generateFormattedText = (statuses: FileProcessStatus[]) => {
+  const [sortBy, setSortBy] = useState<string>("name");
+
+  const generateFormattedText = (
+    statuses: FileProcessStatus[],
+    sortBy?: string
+  ) => {
     return statuses
       .filter((file) => file.status === "completed")
+      .sort((a, b) => {
+        if (sortBy === "size") {
+          return b.size - a.size;
+        } else if (sortBy === "name") {
+          return a.name.localeCompare(b.name);
+        } else {
+          return 0;
+        }
+      })
       .map(
         (file) =>
           `${file.name} [${getReadableFS(file.size)}]\n${file.gdFlixUrl}`
@@ -270,8 +286,23 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (generatedText !== "") setLogsVisible(false);
+    if (generatedText !== "" && logsVisible) setLogsVisible(false);
   }, [generatedText]);
+
+  useEffect(() => {
+    if (generatedText !== "") {
+      let newGeneratedText = "";
+      if (sortBy === "name") {
+        newGeneratedText = generateFormattedText(fileProcessStatuses, sortBy);
+      }
+
+      if (sortBy === "size") {
+        newGeneratedText = generateFormattedText(fileProcessStatuses, sortBy);
+      }
+
+      setGeneratedText(newGeneratedText);
+    }
+  }, [sortBy]);
 
   return (
     <>
@@ -305,14 +336,14 @@ export default function Home() {
               <motion.div
                 initial={{ height: "max-content" }}
                 animate={{ height: logsVisible ? "max-content" : "3.5rem" }}
-                exit={{ height: "0" }} 
+                exit={{ height: "0" }}
                 className={`bg-[#0C101C] flex flex-col overflow-hidden border p-4 px-0 rounded-xl border-slate-800`}
               >
                 <div
                   className={`flex items-center text-slate-300 px-4 pl-2 cursor-pointer  ${
                     !logsVisible ? "pb-4" : ""
                   }`}
-                  onClick={() => setLogsVisible((prev) => !prev)} // Toggle visibility
+                  onClick={() => setLogsVisible((prev) => !prev)}
                 >
                   <ChevronRight></ChevronRight>
                   <span className="font-semibold">Extraction Logs</span>
@@ -320,7 +351,7 @@ export default function Home() {
 
                 <div
                   className={`w-full border-t my-2 border-slate-800 mb-4  ${
-                    !logsVisible ? "hidden" : "" // Hide the border if not visible
+                    !logsVisible ? "hidden" : ""
                   }`}
                 ></div>
 
@@ -367,13 +398,25 @@ export default function Home() {
               <div className="flex flex-col bg-[#0C101C] border  border-slate-800 p-4 pt-0 px-0 rounded-xl relative max-h-96 w-full overflow-y-auto">
                 <div className="flex items-center justify-between text-slate-300 px-4 py-2 sticky top-0 z-10 bg-[#0C101C] border-b mb-4 border-slate-800">
                   <span className="font-semibold">Generated Links</span>
-                  <button
-                    onClick={copyToClipboard}
-                    className="flex gap-2 items-center p-2 rounded-xl hover:bg-[#1F232E]"
-                  >
-                    <Copy size={20}></Copy>
-                    <span>Copy</span>
-                  </button>
+
+                  <div className="flex items-center gap-4">
+                    <SortOptions
+                      onChange={(
+                        event: React.ChangeEvent<HTMLSelectElement>
+                      ) => {
+                        console.log(event.target.value);
+                        setSortBy(event.target.value);
+                      }}
+                      defaultValue="name"
+                    />{" "}
+                    <button
+                      onClick={copyToClipboard}
+                      className="flex gap-2 items-center p-2 rounded-xl hover:bg-[#1F232E]"
+                    >
+                      <Copy size={20}></Copy>
+                      <span>Copy</span>
+                    </button>
+                  </div>
                 </div>
                 <pre className=" text-slate-400 whitespace-pre-wrap break-words px-4">
                   {generatedText}
