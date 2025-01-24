@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const GDFlix_BASE_URL = `https://new6.gdflix.cfd`;
+const GDFlix_BASE_URL = process.env.GDFlix_BASE_URL;
 
 interface FileProcessStatus {
   id: string;
