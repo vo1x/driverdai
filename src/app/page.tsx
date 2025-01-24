@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const GDFlix_BASE_URL = process.env.GDFlix_BASE_URL;
+const BASE_URL = process.env.GDFlix_BASE_URL;
 
 interface FileProcessStatus {
   id: string;
@@ -226,7 +226,7 @@ export default function Home() {
                         ...f,
                         status: "completed",
                         gdFlixUrl:
-                          `${GDFlix_BASE_URL}/file/${gdFlixFile?.key}` ||
+                          `${BASE_URL}/file/${gdFlixFile?.key}` ||
                           "No URL generated",
                       }
                     : f
