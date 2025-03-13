@@ -24,7 +24,8 @@ const getReadableFS = (bytes: number) => {
 
 const fetchGDFlixLink = async (fileId: string): Promise<GDFlixFile | null> => {
   try {
-    const url = `${BASE_URL}/v2/share?id=${fileId}&key=${API_KEY}`;
+    const url = `https://only-apis.com/v2/share?id=${fileId}&key=${API_KEY}`;
+    console.log(url);
 
     const response = await fetch(url);
 
