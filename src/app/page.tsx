@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const BASE_URL = process.env.GDFlix_BASE_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_GDFlix_BASE_URL;
 
 interface FileProcessStatus {
   id: string;
